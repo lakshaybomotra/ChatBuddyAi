@@ -1,0 +1,1 @@
+export const AI_PROVIDER = 'azure'; // Change to 'openai', 'azure', etc.

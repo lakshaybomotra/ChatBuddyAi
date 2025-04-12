@@ -1,6 +1,5 @@
 import {ScrollView} from 'react-native'
-import React from 'react'
-// import {useLocalSearchParams} from "expo-router";
+import React, {useState, useRef, useEffect} from 'react'
 import {ThemedView} from "@/components/ThemedView";
 import {ThemedText} from "@/components/ThemedText";
 import BackButton from "@/components/ui/BackButton";
@@ -11,12 +10,18 @@ import CustomButton from "@/components/ui/CustomButton";
 import ThemedInput from "@/components/ThemedInput";
 import {icons} from "@/constants/icons";
 import ChatBubble from "@/components/ui/ChatBubble";
+import { sendMessage } from "@/lib/ai";
 
 const Chat = () => {
-    // const {id} = useLocalSearchParams();
     const Logo = images.logo;
     const Send = icons.send;
     const {buttonActive, divider, chatBoxType1Text} = useThemedStyles();
+
+    // Add state for messages and input
+    const [messages, setMessages] = useState<{id: number, text: string, sender: 'user' | 'bot'}[]>([]);
+    const [inputText, setInputText] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const scrollViewRef = useRef<ScrollView>(null);
 
     const capabilities = [
         {
@@ -30,68 +35,63 @@ const Chat = () => {
         },
     ]
 
-    const chatMessages = [
-        {
-            id: 1,
-            text: 'What is the capital of France?',
-            sender: 'user',
-        },
-        {
-            id: 2,
-            text: 'The capital of France is Paris.',
-            sender: 'bot',
-        },
-        {
-            id: 3,
-            text: 'Can you tell me more about Paris?',
-            sender: 'user',
-        },
-        {
-            id: 4,
-            text: 'Paris is the capital and most populous city of France. It is known for its art, fashion, and culture.',
-            sender: 'bot',
-        },
-        {
-            id: 5,
-            text: 'What are some famous landmarks in Paris?',
-            sender: 'user',
-        },
-        {
-            id: 6,
-            text: 'Some famous landmarks in Paris include the Eiffel Tower, the Louvre Museum, and Notre-Dame Cathedral.',
-            sender: 'bot',
-        },
-        {
-            id: 7,
-            text: 'Can you recommend some good restaurants in Paris?',
-            sender: 'user',
-        },
-        {
-            id: 8,
-            text: 'Sure! Some popular restaurants in Paris are Le Meurice, L\'Atelier de Joël Robuchon, and Le Train Bleu.',
-            sender: 'bot',
-        },
-        {
-            id: 9,
-            text: 'What is the best time to visit Paris?',
-            sender: 'user',
-        },
-        {
-            id: 10,
-            text: 'The best time to visit Paris is during the spring (March to May) and fall (September to November) when the weather is mild and the crowds are smaller.',
-            sender: 'bot',
-        },
-        {
-            id: 11,
-            text: 'Can you help me plan a trip to Paris?',
-            sender: 'user',
-        },
-        {
-            id: 12,
-            text: 'Of course! I can help you with itinerary suggestions, hotel recommendations, and more.',
-            sender: 'bot',
-        },
-    ]
+    // Function to handle sending messages
+    const handleSend = async () => {
+        if (!inputText.trim()) return;
+
+        // Create new message and add to state
+        const newUserMessage = {
+            id: Date.now(),
+            text: inputText,
+            sender: 'user' as const
+        };
+
+        setMessages(prev => [...prev, newUserMessage]);
+        setInputText("");
+        setIsLoading(true);
+
+        try {
+            // Format messages for AI
+            const formattedMessages = messages.concat(newUserMessage).map(m => ({
+                role: m.sender === 'user' ? 'user' : 'assistant',
+                content: m.text
+            }));
+
+            // Get AI response
+            const aiResponse = await sendMessage(formattedMessages);
+
+            // Add AI response to chat
+            const botMessage = {
+                id: Date.now() + 1,
+                text: aiResponse,
+                sender: 'bot' as const
+            };
+
+            setMessages(prev => [...prev, botMessage]);
+        } catch (error: any) {
+            console.error("Error getting AI response:", error);
+
+            // Add error message
+            const errorMessage = {
+                id: Date.now() + 1,
+                text: `Error: ${error.message || "Failed to get response"}`,
+                sender: 'bot' as const
+            };
+
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Scroll to bottom when new messages are added
+    useEffect(() => {
+        if (scrollViewRef.current && messages.length > 0) {
+            setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({animated: true});
+            }, 100);
+        }
+    }, [messages]);
 
     return (
         <ThemedView isMain={true} className='flex-1 pt-4 pb-6 px-6'>
@@ -111,7 +111,7 @@ const Chat = () => {
             </ThemedView>
 
             {
-                !chatMessages.length && (
+                !messages.length && (
                     <ThemedView className="flex items-center justify-center gap-6 mt-6">
                         <Logo fill={divider} width={80} height={80}/>
                         <ThemedText type='title'
@@ -135,11 +135,12 @@ const Chat = () => {
             }
 
             <ScrollView
+                ref={scrollViewRef}
                 className="flex-1"
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             >
-                {chatMessages.map((message) => (
+                {messages.map((message) => (
                     <ChatBubble
                         message={message.text}
                         key={message.id}
@@ -148,23 +149,30 @@ const Chat = () => {
                 ))}
             </ScrollView>
 
-
             <ThemedView className="absolute bottom-0 left-0 right-0 pb-9 px-6 border-t" style={{borderColor: divider}}>
                 <ThemedView className='mt-6 w-full flex-row items-center gap-4'>
-                    <ThemedInput/>
+                    <ThemedInput
+                        value={inputText}
+                        onChangeText={setInputText}
+                    />
 
-                    <CustomButton style={{
-                        width: 55,
-                        height: 55,
-                        padding: 16,
-                        boxShadow: '4px 8px 24px 0px rgba(23, 206, 146, 0.25)',
-                        display: "flex",
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 8,
-                        borderRadius: 100,
-                    }} type='primary' ready={false}>
+                    <CustomButton
+                        style={{
+                            width: 55,
+                            height: 55,
+                            padding: 16,
+                            boxShadow: '4px 8px 24px 0px rgba(23, 206, 146, 0.25)',
+                            display: "flex",
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: 8,
+                            borderRadius: 100,
+                        }}
+                        type='primary'
+                        ready={!!inputText.trim() && !isLoading}
+                        onPress={handleSend}
+                    >
                         <Send fill={buttonActive} width={28} height={28}/>
                     </CustomButton>
                 </ThemedView>
@@ -172,4 +180,5 @@ const Chat = () => {
         </ThemedView>
     )
 }
+
 export default Chat
