@@ -26,7 +26,7 @@ const Index = () => {
         // Simulate fetching data
         const fetchData = async () => {
             await new Promise(resolve => setTimeout(resolve, 2000));
-            router.replace('/auth/welcome');
+            router.replace('/(auth)/welcome');
         };
 
         fetchData();

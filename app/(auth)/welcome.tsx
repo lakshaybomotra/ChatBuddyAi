@@ -27,9 +27,9 @@ const Welcome = () => {
 
             <ThemedView className="w-full gap-6">
                 <CustomButton title="Log in" type="primary"
-                              onPress={() => router.navigate('/auth/login')}/>
+                              onPress={() => router.navigate('/(auth)/login')}/>
                 <CustomButton title="Sign up" type="secondary"
-                              onPress={() => router.navigate('/auth/register')}/>
+                              onPress={() => router.navigate('/(auth)/register')}/>
             </ThemedView>
 
         </ThemedView>

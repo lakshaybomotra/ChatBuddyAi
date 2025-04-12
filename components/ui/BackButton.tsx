@@ -7,17 +7,23 @@ import {useThemedStyles} from "@/hooks/useThemedStyles";
 interface BackButtonProps {
     className?: string;
     style?: ViewStyle;
+    onPress?: () => void;
 }
 
 const BackButton: React.FC<BackButtonProps> = ({
                                                    className,
                                                    style,
+                                                    onPress,
                                                }) => {
     const BackIcon = icons.back;
     const {icon} = useThemedStyles();
     const classNames = className ? className : 'pt-3 pb-3';
     return (
-        <TouchableOpacity style={style} onPress={() => router.back()} className={classNames}>
+        <TouchableOpacity style={style} onPress={
+            onPress ? onPress : () => {
+                router.back()
+            }
+        } className={classNames}>
             <BackIcon fill={icon}/>
         </TouchableOpacity>
     )

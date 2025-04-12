@@ -5,7 +5,7 @@ import {
     TouchableOpacity,
     GestureResponderEvent,
     ViewStyle,
-    TextStyle,
+    TextStyle, ActivityIndicator,
 } from 'react-native';
 import {PRIMARY_900, COLOR_WHITE} from "@/constants/colors";
 import {useThemedStyles} from "@/hooks/useThemedStyles";
@@ -21,6 +21,7 @@ interface FancyButtonProps {
     ready?: boolean;
     className?: string;
     children?: React.ReactNode;
+    loading?: boolean;
 }
 
 const CustomButton: React.FC<FancyButtonProps> = ({
@@ -32,6 +33,7 @@ const CustomButton: React.FC<FancyButtonProps> = ({
                                                       className,
                                                       ready = true,
                                                       children,
+                                                        loading = false,
                                                   }) => {
     const isPrimary = type === 'primary';
     const {buttonActive, buttonDisabled, buttonSecondary} = useThemedStyles();
@@ -57,20 +59,24 @@ const CustomButton: React.FC<FancyButtonProps> = ({
             ]}
         >
             {
-                title && (
-                    <Text
-                        style={[
-                            styles.textBase,
-                            isPrimary ? styles.primaryText : styles.secondaryText,
-                            textStyle,
-                        ]}
-                    >
-                        {title}
-                    </Text>
+                loading ? (
+                    <ActivityIndicator color={isPrimary ? COLOR_WHITE : PRIMARY_900} />
+                ) : (
+                    title && (
+                        <Text
+                            style={[
+                                styles.textBase,
+                                isPrimary ? styles.primaryText : styles.secondaryText,
+                                textStyle,
+                            ]}
+                        >
+                            {title}
+                        </Text>
+                    )
                 )
             }
             {
-                children
+                !loading && children
             }
         </TouchableOpacity>
     );
