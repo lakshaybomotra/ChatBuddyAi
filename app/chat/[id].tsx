@@ -1,4 +1,4 @@
-import {ScrollView} from 'react-native'
+import {ScrollView, View} from 'react-native'
 import React, {useState, useRef, useEffect} from 'react'
 import {ThemedView} from "@/components/ThemedView";
 import {ThemedText} from "@/components/ThemedText";
@@ -11,6 +11,26 @@ import ThemedInput from "@/components/ThemedInput";
 import {icons} from "@/constants/icons";
 import ChatBubble from "@/components/ui/ChatBubble";
 import { sendMessage } from "@/lib/ai";
+
+// Add TypingIndicator component at the top level
+const TypingIndicator = () => {
+    return (
+        <View className="flex-row items-center gap-2 p-4 max-w-[20%] bg-greyscale-100 dark:bg-dark-4 rounded-t-xl rounded-br-xl rounded-bl-none">
+            <View
+                className="w-2 h-2 rounded-full bg-primary-500 animate-bounce"
+                style={{ animationDelay: '0ms' }}
+            />
+            <View
+                className="w-2 h-2 rounded-full bg-primary-500 animate-bounce"
+                style={{ animationDelay: '200ms' }}
+            />
+            <View
+                className="w-2 h-2 rounded-full bg-primary-500 animate-bounce"
+                style={{ animationDelay: '400ms' }}
+            />
+        </View>
+    );
+};
 
 const Chat = () => {
     const Logo = images.logo;
@@ -147,6 +167,7 @@ const Chat = () => {
                         isSender={message.sender === 'user'}
                     />
                 ))}
+                {isLoading && <TypingIndicator />}
             </ScrollView>
 
             <ThemedView className="absolute bottom-0 left-0 right-0 pb-9 px-6 border-t" style={{borderColor: divider}}>

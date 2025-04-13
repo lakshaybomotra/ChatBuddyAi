@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, Share } from 'react-native';
+import { Text, View, TouchableOpacity } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { icons } from "@/constants/icons";
 import { GREYSCALE_400, GREYSCALE_700 } from "@/constants/colors";
@@ -13,22 +13,11 @@ type ChatBubbleProps = {
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isSender = false }) => {
     const Copy = icons.copy;
-    const ShareIcon = icons.share;
     const theme = useColorScheme() ?? 'light';
 
     const handleCopy = () => {
         Clipboard.setStringAsync(message);
     };
-
-    const handleShare = async () => {
-        try {
-            await Share.share({ message });
-        } catch (error) {
-            console.error('Error sharing:', error);
-        }
-    };
-
-    const shouldShowIcon = message.length > 120; // tweak this threshold
 
     if (!isSender) {
         return (
@@ -45,14 +34,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isSender = false }) =>
                     <TouchableOpacity onPress={handleCopy}>
                         <Copy fill={theme === 'dark' ? GREYSCALE_700 : GREYSCALE_400} width={24} height={24} />
                     </TouchableOpacity>
-
-                    {
-                        shouldShowIcon && (
-                            <TouchableOpacity onPress={handleShare}>
-                                <ShareIcon fill={theme === 'dark' ? GREYSCALE_700 : GREYSCALE_400} />
-                            </TouchableOpacity>
-                        )
-                    }
                 </View>
             </View>
         );
