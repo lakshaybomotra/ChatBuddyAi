@@ -5,34 +5,42 @@ import { ThemedText } from "@/components/ThemedText";
 import BackButton from "@/components/ui/BackButton";
 import { getUserChats } from '@/lib/services/chatService';
 import { router } from "expo-router";
-import {useAuth} from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/clerk-expo";
 
 import type { Chat } from "@/lib/services/chatService";
 
 const History = () => {
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const { userId } = useAuth();
 
     useEffect(() => {
         loadChats();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
 
     const loadChats = async () => {
         setLoading(true);
+        setError(null);
         if (!userId) {
             setChats([]);
             setLoading(false);
             return;
         }
-        const userChats = await getUserChats(userId as string);
-        setChats(userChats);
+        try {
+            const userChats = await getUserChats(userId as string);
+            setChats(userChats.filter(chat => !!chat.id));
+        } catch (err) {
+            setError("Failed to load chats. Please try again.");
+            setChats([]);
+        }
         setLoading(false);
     };
 
     return (
         <ThemedView isMain={true} className='flex-1 pt-4 pb-6 px-6'>
-            <ThemedView className="flex-row items-center justify-between">
+            <ThemedView className="flex-row items-center justify-between mb-4">
                 <BackButton />
                 <ThemedText
                     className='text-greyscale-900 dark:text-others-white'
@@ -51,13 +59,19 @@ const History = () => {
                 <ThemedView className="flex-1 justify-center items-center">
                     <ThemedText>Loading chats...</ThemedText>
                 </ThemedView>
+            ) : error ? (
+                <ThemedView className="flex-1 justify-center items-center">
+                    <ThemedText className="text-red-500">{error}</ThemedText>
+                </ThemedView>
             ) : (
                 <FlatList
-                    data={chats.filter(chat => !!chat.id)}
-                    keyExtractor={(item) => item.id ?? Math.random().toString()}
+                    data={chats}
+                    keyExtractor={(item) => item.id!}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            onPress={() => item.id && router.push(`/chat/${item.id}`)}
+                            onPress={() => router.push(`/chat/${item.id}`)}
+                            accessibilityLabel={`Open chat: ${item.title}`}
+                            accessible={true}
                             className="p-4 border-b border-greyscale-200 dark:border-dark-4"
                         >
                             <ThemedText className="font-bold text-lg">{item.title}</ThemedText>

@@ -11,6 +11,7 @@ import ThemedInput from "@/components/ThemedInput";
 import {icons} from "@/constants/icons";
 import ChatBubble from "@/components/ui/ChatBubble";
 import {sendMessage} from "@/lib/ai";
+import { PRIMARY_900 } from "@/constants/colors";
 import {router, useLocalSearchParams} from "expo-router";
 import {getAssistantPrompt} from "@/lib/ai/assistantPrompts";
 import {saveMessage, getChatMessages, createChat, checkChatExists} from '@/lib/services/chatService';
@@ -64,6 +65,7 @@ const Chat = () => {
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const scrollViewRef = useRef<ScrollView>(null);
 
     const assistantCapabilities: Record<string, { text: string }[]> = {
@@ -215,43 +217,21 @@ const Chat = () => {
 
     useEffect(() => {
         const initChat = async () => {
+            setError(null);
             if (isNewChat) {
-                try {
-                    const assistantTitle = assistantType || 'ChatBuddy AI';
-                    const assistantDesc = assistantDescription || '';
-                    
-                    const newChat = await createChat(
-                        assistantTitle,
-                        assistantTitle,
-                        assistantDesc,
-                        String(userId)
-                    );
-
-                    if (newChat && newChat.id) {
-                        setCurrentChat({
-                            id: newChat.id,
-                            title: assistantTitle
-                        });
-
-                        setCurrentAssistant({
-                            title: assistantTitle,
-                            description: assistantDesc
-                        });
-
-                        setPendingNewChatId(newChat.id);
-                        setIsInitializing(false);
-                    } else {
-                        console.error('Error creating new chat');
-                        setIsInitializing(false);
-                    }
-                } catch (error) {
-                    console.error('Error initializing chat:', error);
-                    setIsInitializing(false);
-                }
+                // Do not create chat yet; wait for first message
+                setIsInitializing(false);
+                setCurrentChat({
+                    id: '',
+                    title: assistantType || 'ChatBuddy AI'
+                });
+                setCurrentAssistant({
+                    title: assistantType || 'ChatBuddy AI',
+                    description: assistantDescription || ''
+                });
             } else {
                 try {
                     const chatDoc = await checkChatExists(chatId);
-                    console.log(chatDoc);
                     if (chatDoc) {
                         loadChatHistory();
                         
@@ -263,12 +243,12 @@ const Chat = () => {
                         }
                         setIsInitializing(false);
                     } else {
-                        console.error("Chat doesn't exist or doesn't belong to user");
+                        setError("Chat doesn't exist or doesn't belong to user");
                         router.replace('/');
                         setIsInitializing(false);
                     }
                 } catch (error) {
-                    console.error("Error checking chat:", error);
+                    setError("Error checking chat");
                     setIsInitializing(false);
                 }
             }
@@ -303,12 +283,49 @@ const Chat = () => {
                 })));
             }
         } catch (error) {
-            console.error("Error loading chat history:", error);
+            setError("Error loading chat history");
         }
     };
 
     const handleSend = async () => {
-        if (!inputText.trim() || !effectiveChatId || !userId) return;
+        if (!inputText.trim() || !userId) return;
+
+        setError(null);
+
+        let chatIdToUse = effectiveChatId;
+
+        // If this is a new chat, create it now
+        if (isNewChat && !chatIdToUse) {
+            try {
+                const assistantTitle = assistantType || 'ChatBuddy AI';
+                const assistantDesc = assistantDescription || '';
+                const newChat = await createChat(
+                    assistantTitle,
+                    assistantTitle,
+                    assistantDesc,
+                    String(userId)
+                );
+                if (newChat && newChat.id) {
+                    setCurrentChat({
+                        id: newChat.id,
+                        title: assistantTitle
+                    });
+                    setPendingNewChatId(newChat.id);
+                    chatIdToUse = newChat.id;
+                } else {
+                    setError('Error creating new chat');
+                    return;
+                }
+            } catch (error) {
+                setError('Error creating new chat');
+                return;
+            }
+        }
+
+        if (!chatIdToUse) {
+            setError('No chat ID available');
+            return;
+        }
 
         const newUserMessage = {
             text: inputText,
@@ -327,7 +344,7 @@ const Chat = () => {
         setIsLoading(true);
 
         try {
-            await saveMessage(effectiveChatId, newUserMessage, String(userId));
+            await saveMessage(chatIdToUse, newUserMessage, String(userId));
 
             // Gemini does NOT support 'system' role. Prepend system prompt as first user message.
             const systemPromptText = getAssistantPrompt(currentAssistant.title, currentAssistant.description);
@@ -357,10 +374,10 @@ const Chat = () => {
             };
             setMessages(prev => [...prev, tempUIBotMessage]);
 
-            await saveMessage(effectiveChatId, botMessage, String(userId));
+            await saveMessage(chatIdToUse, botMessage, String(userId));
 
         } catch (error: any) {
-            console.error("Error in chat flow:", error);
+            setError(error.message || "Failed to get response");
 
             setMessages(prev => [...prev, {
                 id: (Date.now() + 1).toString(),
@@ -405,8 +422,14 @@ const Chat = () => {
                 </ThemedText>
             </ThemedView>
 
+            {error && (
+                <ThemedView className="flex items-center justify-center my-4">
+                    <ThemedText className="text-red-500">{error}</ThemedText>
+                </ThemedView>
+            )}
+
             {
-                !messages.length && (
+                !messages.length && !error && (
                     <ThemedView className="flex items-center justify-center gap-6 mt-6">
                         <Logo fill={divider} width={80} height={80}/>
                         <ThemedText type='title'
@@ -458,7 +481,7 @@ const Chat = () => {
                             width: 55,
                             height: 55,
                             padding: 16,
-                            boxShadow: '4px 8px 24px 0px rgba(23, 206, 146, 0.25)',
+                            boxShadow: `4px 8px 24px 0px ${PRIMARY_900}40`,
                             display: "flex",
                             flexDirection: 'column',
                             justifyContent: 'center',

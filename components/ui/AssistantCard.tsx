@@ -8,14 +8,16 @@ type AssistantCardProps = {
     description: string;
     icon: ImageSourcePropType;
     onPress?: () => void;
+    accessibilityLabel?: string;
 };
 
 const AssistantCard: React.FC<AssistantCardProps> = ({
-                                                         title,
-                                                         description,
-                                                         icon,
-                                                         onPress,
-                                                     }) => {
+    title,
+    description,
+    icon,
+    onPress,
+    accessibilityLabel,
+}) => {
     const handlePress = () => {
         console.log('Press');
         router.push({
@@ -30,6 +32,8 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
     return (
         <TouchableOpacity
             onPress={onPress || handlePress}
+            accessibilityLabel={accessibilityLabel}
+            accessible={true}
             className='bg-greyscale-50 dark:bg-dark-2 border-4 border-greyscale-100 dark:border-dark-3 p-5 rounded-2xl w-[160px] items-start mr-3 max-h-60'>
             <View className="bg-white/10 rounded-xl mb-4">
                 <Image source={icon} className="w-14 h-14" resizeMode="contain"/>

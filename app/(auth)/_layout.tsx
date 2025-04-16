@@ -1,7 +1,7 @@
 import { Redirect, Stack } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import { View, Text, ActivityIndicator } from 'react-native';
-import { PRIMARY_900 } from '@/constants/colors';
+import { PRIMARY_900, ALERT_ERROR } from '@/constants/colors';
 import { useState, useEffect } from 'react';
 
 export default function AuthRoutesLayout() {
@@ -36,7 +36,7 @@ export default function AuthRoutesLayout() {
     if (error) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                <Text style={{ color: 'red', textAlign: 'center', marginBottom: 20 }}>{error}</Text>
+                <Text style={{ color: ALERT_ERROR, textAlign: 'center', marginBottom: 20 }}>{error}</Text>
                 <Text style={{ textAlign: 'center' }}>Please restart the app or check your connection.</Text>
             </View>
         );
