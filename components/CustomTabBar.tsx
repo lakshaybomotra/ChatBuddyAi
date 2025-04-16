@@ -9,7 +9,7 @@ const tabs = [
     {name: 'AI Assistants', route: '/assistants', icon: icons.assistants, iconActive: icons.assistantsActive},
     {name: 'History', route: '/history', icon: icons.history, iconActive: icons.historyActive},
     {name: 'Account', route: '/account', icon: icons.account, iconActive: icons.accountActive},
-];
+] as const;
 
 const CustomTabBar = () => {
     const router = useRouter();
@@ -18,12 +18,10 @@ const CustomTabBar = () => {
 
     return (
         <View
-            // className="flex-row justify-around items-center h-[90px] pb-2.5 pt-2.5 bg-white dark:bg-alerts-buttonDisabled"
             style={{
                 flexDirection: 'row',
                 justifyContent: 'space-around',
                 alignItems: 'center',
-                // height: 80,
                 backgroundColor: background,
                 paddingBottom: 10,
                 paddingTop: 10,

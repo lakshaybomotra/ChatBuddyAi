@@ -14,7 +14,6 @@ import send from '@/assets/icons/send.svg';
 import copy from '@/assets/icons/copy.svg';
 import share from '@/assets/icons/share.svg';
 
-
 export const icons = {
     chat,
     chatActive,

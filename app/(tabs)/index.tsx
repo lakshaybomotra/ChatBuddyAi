@@ -46,7 +46,12 @@ export default function Index() {
                 </ThemedView>
                 <CustomButton title='Start Chat' className='mt-6' type='primary' onPress={
                     () => {
-                        router.push('/chat/123');
+                        router.push({
+                            pathname: '/chat/[id]',
+                            params: {
+                                id: 'new',
+                            },
+                        })
                     }
                 }/>
             </ThemedView>

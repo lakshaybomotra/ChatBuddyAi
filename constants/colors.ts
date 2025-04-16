@@ -1,4 +1,3 @@
-// Alerts
 export const ALERT_BUTTON_DISABLED = '#12a575';
 export const ALERT_DARK_DISABLED = '#636363';
 export const ALERT_ERROR = '#f75555';
@@ -7,7 +6,6 @@ export const ALERT_LIGHT_DISABLED = '#d8d8d8';
 export const ALERT_SUCCESS = '#12d18e';
 export const ALERT_WARNING = '#facc15';
 
-// Backgrounds
 export const BACKGROUND_BLUE = '#f2f4ff';
 export const BACKGROUND_BROWN = '#fbf6f3';
 export const BACKGROUND_GREEN = '#edfbf7';
@@ -17,13 +15,11 @@ export const BACKGROUND_RED = '#fff4f4';
 export const BACKGROUND_TEAL = '#eff9f8';
 export const BACKGROUND_YELLOW = '#fffceb';
 
-// Dark Shades
 export const DARK_SHADE_1 = '#181a20';
 export const DARK_SHADE_2 = '#1f222a';
 export const DARK_SHADE_3 = '#262a35';
 export const DARK_SHADE_4 = '#35383f';
 
-// Greyscale
 export const GREYSCALE_50 = '#fafafa';
 export const GREYSCALE_100 = '#f5f5f5';
 export const GREYSCALE_200 = '#eeeeee';
@@ -35,7 +31,6 @@ export const GREYSCALE_700 = '#616161';
 export const GREYSCALE_800 = '#424242';
 export const GREYSCALE_900 = '#212121';
 
-// Others
 export const COLOR_AMBER = '#ffc02d';
 export const COLOR_BLACK = '#000000';
 export const COLOR_BLUE = '#1a96f0';
@@ -57,7 +52,6 @@ export const COLOR_TEAL = '#009689';
 export const COLOR_WHITE = '#ffffff';
 export const COLOR_YELLOW = '#ffeb4f';
 
-// Primary
 export const PRIMARY_50 = '#e8faf4';
 export const PRIMARY_100 = '#d1f5e9';
 export const PRIMARY_200 = '#b9f0de';
@@ -69,7 +63,6 @@ export const PRIMARY_700 = '#45d8a8';
 export const PRIMARY_800 = '#2ed39d';
 export const PRIMARY_900 = '#17ce92';
 
-// Secondary
 export const SECONDARY_50 = '#ebeef2';
 export const SECONDARY_100 = '#d6dce6';
 export const SECONDARY_200 = '#c2cbd9';
@@ -81,7 +74,6 @@ export const SECONDARY_700 = '#5c739a';
 export const SECONDARY_800 = '#47628e';
 export const SECONDARY_900 = '#335081';
 
-// Transparent Colors
 export const TRANSPARENT_BLUE = '#4b68ff14';
 export const TRANSPARENT_BROWN = '#a4634d14';
 export const TRANSPARENT_GREEN = '#17ce9214';

@@ -20,6 +20,8 @@
       "sourceExts": [
         "js",
         "jsx",
+        "ts",
+        "tsx",
         "json",
         "wasm",
         "svg"
@@ -50,7 +52,8 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "tsconfigPaths": true
     },
     "extra": {
       "router": {
@@ -59,6 +62,13 @@
       "eas": {
         "projectId": "28c821b6-276d-41cc-9103-978cb6c50466"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/28c821b6-276d-41cc-9103-978cb6c50466"
     }
   }
 }

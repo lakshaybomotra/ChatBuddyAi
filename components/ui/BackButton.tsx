@@ -8,12 +8,14 @@ interface BackButtonProps {
     className?: string;
     style?: ViewStyle;
     onPress?: () => void;
+    fill?: string;
 }
 
 const BackButton: React.FC<BackButtonProps> = ({
                                                    className,
                                                    style,
                                                     onPress,
+                                                    fill,
                                                }) => {
     const BackIcon = icons.back;
     const {icon} = useThemedStyles();
@@ -24,7 +26,7 @@ const BackButton: React.FC<BackButtonProps> = ({
                 router.back()
             }
         } className={classNames}>
-            <BackIcon fill={icon}/>
+            <BackIcon fill={fill ? fill : icon} />
         </TouchableOpacity>
     )
 }

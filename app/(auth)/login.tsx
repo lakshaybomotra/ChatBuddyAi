@@ -63,9 +63,6 @@ const Login = () => {
                 console.error(JSON.stringify(signInAttempt, null, 2))
             }
         } catch (err: any) {
-            // console.error(JSON.stringify(err, null, 2))
-
-            // Show toast with error message
             Toast.show({
                 type: 'error',
                 text1: 'Authentication Failed',

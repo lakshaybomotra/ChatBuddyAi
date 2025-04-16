@@ -3,7 +3,8 @@ import {StyleSheet, Text, type TextProps} from 'react-native';
 export type ThemedTextProps = TextProps & {
     lightColor?: string;
     darkColor?: string;
-    type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link' | 'custom' | 'labels';
+    style?: any;
+    type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link' | 'custom' | 'labels' | 'customText';
 };
 
 export function ThemedText({
@@ -25,6 +26,7 @@ export function ThemedText({
                 type === 'link' ? styles.link : undefined,
                 type === 'custom' ? styles.custom : undefined,
                 type === 'labels' ? styles.labels : undefined,
+                type === 'customText' && undefined,
                 style,
             ]}
             {...rest}

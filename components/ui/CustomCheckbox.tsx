@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { Pressable } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 
-export default function CustomCheckbox({ checked: defaultChecked = false, onChange }) {
+type CustomCheckboxProps = {
+    checked?: boolean;
+    onChange?: (checked: boolean) => void;
+};
+
+export default function CustomCheckbox({ checked: defaultChecked = false, onChange }: CustomCheckboxProps) {
     const [checked, setChecked] = useState(defaultChecked);
 
     const toggle = () => {

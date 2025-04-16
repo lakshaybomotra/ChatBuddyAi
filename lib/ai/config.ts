@@ -1,1 +1,1 @@
-export const AI_PROVIDER = 'azure'; // Change to 'openai', 'azure', etc.
+export const AI_PROVIDER: "gemini" | "azure" = 'gemini';
