@@ -436,7 +436,7 @@ const Chat = () => {
     if (isInitializing) {
         return (
             <ThemedView isMain={true} className="flex-1 justify-center items-center">
-                <ThemedText>Loading chat...</ThemedText>
+                <ThemedText className='text-greyscale-900 dark:text-others-white'>Loading chat...</ThemedText>
             </ThemedView>
         );
     }

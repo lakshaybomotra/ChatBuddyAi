@@ -9,6 +9,7 @@ import {
     getDoc,
     updateDoc,
     serverTimestamp,
+    deleteDoc,
     Firestore
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -18,6 +19,25 @@ export type ChatMessage = {
     text: string;
     sender: 'user' | 'bot';
     timestamp: any;
+};
+
+export const deleteAllUserChats = async (userId: string): Promise<void> => {
+    const firestore = verifyFirestore();
+    if (!firestore || !userId) return;
+
+    try {
+        const q = query(
+            collection(firestore, 'chats'),
+            where('userId', '==', userId)
+        );
+        const querySnapshot = await getDocs(q);
+        const deletePromises = querySnapshot.docs.map(docSnap =>
+            deleteDoc(doc(firestore, 'chats', docSnap.id))
+        );
+        await Promise.all(deletePromises);
+    } catch (error) {
+        console.error('Error deleting all user chats:', error);
+    }
 };
 
 export type Chat = {
@@ -147,5 +167,19 @@ export const getChatMessages = async (chatId: string, userId: string) => {
     } catch (error) {
         console.error('Error getting messages:', error);
         return [];
+    }
+};
+
+/**
+ * Delete a single chat by its ID.
+ */
+export const deleteUserChat = async (chatId: string): Promise<void> => {
+    const firestore = verifyFirestore();
+    if (!firestore || !chatId) return;
+
+    try {
+        await deleteDoc(doc(firestore, 'chats', chatId));
+    } catch (error) {
+        console.error('Error deleting chat:', error);
     }
 };
