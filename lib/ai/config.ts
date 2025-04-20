@@ -1,1 +1,1 @@
-export const AI_PROVIDER: "gemini" | "azure" = 'gemini';
+export const AI_PROVIDER: "gemini" | "azure" = 'azure';

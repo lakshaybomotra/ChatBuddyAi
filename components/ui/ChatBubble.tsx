@@ -1,26 +1,69 @@
 import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { icons } from "@/constants/icons";
-import { GREYSCALE_400, GREYSCALE_700 } from "@/constants/colors";
+import { GREYSCALE_400, GREYSCALE_700, PRIMARY_900 } from "@/constants/colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import clsx from "clsx";
 import Markdown from 'react-native-markdown-display';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
+import { Image, ActivityIndicator } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+
 type ChatBubbleProps = {
     message: string;
+    imageUri?: string;
     isSender?: boolean;
     assistantType?: string;
 };
 
-const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isSender = false }) => {
+const ChatBubble: React.FC<ChatBubbleProps> = ({ message, imageUri, isSender = false }) => {
     const Copy = icons.copy;
+    const Download = icons.download;
     const theme = useColorScheme() ?? 'light';
     const textColor = useThemeColor({}, 'text');
 
+    const [imageLoading, setImageLoading] = React.useState<boolean>(!!imageUri);
+    const [downloading, setDownloading] = React.useState<boolean>(false);
+
     const handleCopy = () => {
         Clipboard.setStringAsync(message);
+    };
+
+    const handleDownload = async () => {
+        if (!imageUri) return;
+        try {
+            setDownloading(true);
+            // Request permission
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission required', 'Permission to access media library is required!');
+                setDownloading(false);
+                return;
+            }
+            // Download to a temporary file
+            const filename = imageUri.split('/').pop() || 'image.jpg';
+            const fileUri = FileSystem.cacheDirectory + filename;
+            const downloadResumable = FileSystem.createDownloadResumable(
+                imageUri,
+                fileUri
+            );
+            const downloadResult = await downloadResumable.downloadAsync();
+            if (!downloadResult || !downloadResult.uri) {
+                Alert.alert('Error', 'Failed to download image.');
+                setDownloading(false);
+                return;
+            }
+            // Save to gallery
+            await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
+            Alert.alert('Downloaded', 'Image has been saved to your gallery.');
+        } catch (e) {
+            Alert.alert('Error', 'Failed to download image.');
+        } finally {
+            setDownloading(false);
+        }
     };
 
     const markdownStyles = {
@@ -97,15 +140,39 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isSender = false }) =>
             <View className={clsx(
                 "bg-greyscale-100 dark:bg-dark-4 px-4 py-2 rounded-t-xl rounded-br-xl rounded-bl-none"
             )}>
+                {imageUri ? (
+                    <View style={{ width: 220, height: 220, marginBottom: 8, borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0', overflow: 'hidden' }}>
+                        {imageLoading && (
+                            <ActivityIndicator size="large" color="#888" style={{ position: 'absolute', alignSelf: 'center' }} />
+                        )}
+                        <Image
+                            source={{ uri: imageUri }}
+                            style={{ width: 220, height: 220, borderRadius: 12, opacity: imageLoading ? 0 : 1 }}
+                            resizeMode="contain"
+                            onLoadStart={() => setImageLoading(true)}
+                            onLoadEnd={() => setImageLoading(false)}
+                        />
+                    </View>
+                ) : null}
                 <Markdown style={markdownStyles} rules={rendererRules}>
                     {message}
                 </Markdown>
             </View>
 
             <View className="absolute top-2 -right-10 flex-col gap-4">
-                <TouchableOpacity onPress={handleCopy}>
-                    <Copy fill={theme === 'dark' ? GREYSCALE_700 : GREYSCALE_400} width={24} height={24} />
-                </TouchableOpacity>
+                {imageUri ? (
+                    <TouchableOpacity onPress={handleDownload} disabled={downloading}>
+                        {downloading ? (
+                            <ActivityIndicator size="small" color={theme === 'dark' ? PRIMARY_900 : GREYSCALE_400} />
+                        ) : (
+                            <Download stroke={theme === 'dark' ? PRIMARY_900 : GREYSCALE_400} width={24} height={24} />
+                        )}
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity onPress={handleCopy}>
+                        <Copy fill={theme === 'dark' ? GREYSCALE_700 : GREYSCALE_400} width={24} height={24} />
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );

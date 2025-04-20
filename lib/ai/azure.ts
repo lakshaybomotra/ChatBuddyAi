@@ -6,6 +6,11 @@ const endpoint = process.env.EXPO_PUBLIC_AZURE_OPENAI_ENDPOINT;
 const modelName = process.env.EXPO_PUBLIC_AZURE_OPENAI_MODEL;
 const deployment = process.env.EXPO_PUBLIC_AZURE_OPENAI_DEPLOYMENT;
 const options = { endpoint, apiKey, deployment, apiVersion }
+const IMAGE_MODEL_NAME = process.env.EXPO_PUBLIC_AZURE_OPENAI_IMAGE_MODEL;
+const IMAGE_DEPLOYMENT = process.env.EXPO_PUBLIC_AZURE_OPENAI_IMAGE_DEPLOYMENT;
+const IMAGE_API_VERSION = process.env.EXPO_PUBLIC_AZURE_OPENAI_IMAGE_API_VERSION;
+
+const imageOptions = { endpoint, apiKey, deployment: IMAGE_DEPLOYMENT, apiVersion: IMAGE_API_VERSION }
 
 export async function sendMessage(messages: { role: string; content: string }[]): Promise<string> {
     console.log("Azure OpenAI call", messages);
@@ -39,3 +44,41 @@ export async function sendMessage(messages: { role: string; content: string }[])
     }
 }
 
+/**
+ * Generates an image from a prompt using the AzureOpenAI client.
+ * @param {string} prompt
+ * @returns {Promise<{ text: string; imageUri: string }>}
+ */
+export async function generateImage(prompt : string): Promise<{ text: string; imageUri: string }> {
+    try {
+      const client = new AzureOpenAI(imageOptions);
+
+      const result = await client.images.generate({
+        model: IMAGE_MODEL_NAME,
+        prompt,
+        size: '1024x1024',
+        n: 1,
+        quality: 'hd'
+      });
+  
+      console.log('Azure image generation result:', result);
+      const imageUri = result.data?.[0]?.url;
+      if (!imageUri) {
+        return {
+          text: 'No image URL returned by the service.',
+          imageUri: ''
+        };
+      }
+  
+      return {
+        text: 'Here is your generated image.',
+        imageUri
+      };
+    } catch (err: any) {
+      console.error('Azure image generation error:', err);
+      return {
+        text: `Azure image generation error: ${err.message}`,
+        imageUri: ''
+      };
+    }
+  }

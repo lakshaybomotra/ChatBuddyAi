@@ -13,6 +13,7 @@ import hide from '@/assets/icons/hide.svg';
 import send from '@/assets/icons/send.svg';
 import copy from '@/assets/icons/copy.svg';
 import share from '@/assets/icons/share.svg';
+import download from '@/assets/icons/download.svg';
 
 export const icons = {
     chat,
@@ -30,4 +31,5 @@ export const icons = {
     send,
     copy,
     share,
+    download,
 }

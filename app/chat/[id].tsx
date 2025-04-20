@@ -10,7 +10,7 @@ import CustomButton from "@/components/ui/CustomButton";
 import ThemedInput from "@/components/ThemedInput";
 import {icons} from "@/constants/icons";
 import ChatBubble from "@/components/ui/ChatBubble";
-import {sendMessage} from "@/lib/ai";
+import {sendMessage, generateImage} from "@/lib/ai";
 import { PRIMARY_900 } from "@/constants/colors";
 import {router, useLocalSearchParams} from "expo-router";
 import {getAssistantPrompt} from "@/lib/ai/assistantPrompts";
@@ -61,7 +61,7 @@ const Chat = () => {
 
     const [pendingNewChatId, setPendingNewChatId] = useState<string | null>(null);
 
-    const [messages, setMessages] = useState<{ id: string, text: string, sender: 'user' | 'bot' }[]>([]);
+    const [messages, setMessages] = useState<{ id: string, text: string, sender: 'user' | 'bot', imageUri?: string }[]>([]);
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
@@ -219,7 +219,6 @@ const Chat = () => {
         const initChat = async () => {
             setError(null);
             if (isNewChat) {
-                // Do not create chat yet; wait for first message
                 setIsInitializing(false);
                 setCurrentChat({
                     id: '',
@@ -294,7 +293,47 @@ const Chat = () => {
 
         let chatIdToUse = effectiveChatId;
 
-        // If this is a new chat, create it now
+        // If assistant is Image Generator, skip chat creation and saving messages
+        if (currentAssistant.title === "Image Generator") {
+            const newUserMessage = {
+                text: inputText,
+                sender: 'user' as const,
+                timestamp: new Date().toISOString()
+            };
+            const tempUIMessage = {
+                id: Date.now().toString(),
+                ...newUserMessage
+            };
+            setMessages(prev => [...prev, tempUIMessage]);
+            setInputText("");
+            setIsLoading(true);
+            try {
+                // Only generate image, do not save anything to Firebase
+                const imageResult = await generateImage(inputText);
+                const botMessage = {
+                    text: imageResult.text,
+                    imageUri: imageResult.imageUri,
+                    sender: 'bot' as const,
+                    timestamp: new Date().toISOString()
+                };
+                const tempUIBotMessage = {
+                    id: (Date.now() + 1).toString(),
+                    ...botMessage
+                };
+                setMessages(prev => [...prev, tempUIBotMessage]);
+            } catch (error: any) {
+                setError(error.message || "Failed to get response");
+                setMessages(prev => [...prev, {
+                    id: (Date.now() + 1).toString(),
+                    text: `Error: ${error.message || "Failed to get response"}`,
+                    sender: 'bot' as const
+                }]);
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
+
         if (isNewChat && !chatIdToUse) {
             try {
                 const assistantTitle = assistantType || 'ChatBuddy AI';
@@ -346,7 +385,6 @@ const Chat = () => {
         try {
             await saveMessage(chatIdToUse, newUserMessage, String(userId));
 
-            // Gemini does NOT support 'system' role. Prepend system prompt as first user message.
             const systemPromptText = getAssistantPrompt(currentAssistant.title, currentAssistant.description);
 
             const formattedMessages = [
@@ -373,9 +411,7 @@ const Chat = () => {
                 ...botMessage
             };
             setMessages(prev => [...prev, tempUIBotMessage]);
-
             await saveMessage(chatIdToUse, botMessage, String(userId));
-
         } catch (error: any) {
             setError(error.message || "Failed to get response");
 
@@ -461,6 +497,7 @@ const Chat = () => {
                 {messages.map((message) => (
                     <ChatBubble
                         message={message.text}
+                        imageUri={message.imageUri}
                         key={message.id}
                         isSender={message.sender === 'user'}
                         assistantType={message.sender === 'bot' ? currentAssistant.title : undefined}
