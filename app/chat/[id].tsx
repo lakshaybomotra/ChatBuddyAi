@@ -1,4 +1,4 @@
-import {ScrollView, View} from 'react-native'
+import {ScrollView, View, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback} from 'react-native'
 import React, {useState, useRef, useEffect} from 'react'
 import {ThemedView} from "@/components/ThemedView";
 import {ThemedText} from "@/components/ThemedText";
@@ -49,6 +49,7 @@ const Chat = () => {
     const isNewChat = chatId === 'new';
     const {userId} = useAuth();
 
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentChat, setCurrentChat] = useState<{ id: string, title: string }>({
         id: isNewChat ? '' : chatId,
         title: assistantType || 'ChatBuddy AI'
@@ -67,6 +68,29 @@ const Chat = () => {
     const [isInitializing, setIsInitializing] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const scrollViewRef = useRef<ScrollView>(null);
+
+    // Keyboard event listeners
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            () => {
+                setKeyboardVisible(true);
+                // Allow layout to adjust before scrolling
+                setTimeout(() => scrollToBottom(true), 100);
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setKeyboardVisible(false);
+            }
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
 
     const assistantCapabilities: Record<string, { text: string }[]> = {
         'Write an Article': [
@@ -232,7 +256,7 @@ const Chat = () => {
                 try {
                     const chatDoc = await checkChatExists(chatId);
                     if (chatDoc) {
-                        loadChatHistory();
+                        await loadChatHistory();
                         
                         if (assistantType) {
                             setCurrentAssistant({
@@ -278,17 +302,43 @@ const Chat = () => {
                 setMessages(chatMessages.map(msg => ({
                     id: msg.id || Date.now().toString(),
                     text: msg.text,
-                    sender: msg.sender
+                    sender: msg.sender,
+                    imageUri: msg.imageUri
                 })));
+                
+                // Wait for render cycle to complete before scrolling
+                setTimeout(() => scrollToBottom(false), 300);
             }
         } catch (error) {
             setError("Error loading chat history");
         }
     };
 
+    const scrollToBottom = (animated = true) => {
+        if (scrollViewRef.current && messages.length > 0) {
+            try {
+                // Use a delay to ensure layout is complete
+                setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({animated});
+                }, 150);
+            } catch (e) {
+                console.error("Scroll error:", e);
+            }
+        }
+    };
+
+    // Make sure we scroll when messages change
+    useEffect(() => {
+        if (messages.length > 0) {
+            // Use a slightly longer delay for message updates
+            setTimeout(() => scrollToBottom(true), 200);
+        }
+    }, [messages]);
+
     const handleSend = async () => {
         if (!inputText.trim() || !userId) return;
 
+        Keyboard.dismiss();
         setError(null);
 
         let chatIdToUse = effectiveChatId;
@@ -378,7 +428,6 @@ const Chat = () => {
         };
 
         setMessages(prev => [...prev, tempUIMessage]);
-
         setInputText("");
         setIsLoading(true);
 
@@ -410,6 +459,7 @@ const Chat = () => {
                 id: (Date.now() + 1).toString(),
                 ...botMessage
             };
+            
             setMessages(prev => [...prev, tempUIBotMessage]);
             await saveMessage(chatIdToUse, botMessage, String(userId));
         } catch (error: any) {
@@ -425,14 +475,6 @@ const Chat = () => {
         }
     };
 
-    useEffect(() => {
-        if (scrollViewRef.current && messages.length > 0) {
-            setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({animated: true});
-            }, 100);
-        }
-    }, [messages]);
-
     if (isInitializing) {
         return (
             <ThemedView isMain={true} className="flex-1 justify-center items-center">
@@ -442,99 +484,121 @@ const Chat = () => {
     }
 
     return (
-        <ThemedView isMain={true} className='flex-1 pt-4 pb-6 px-6'>
-            <ThemedView className="flex-row items-center justify-between">
-                <BackButton/>
-                <ThemedText
-                    className='text-greyscale-900 dark:text-others-white'
-                    style={{
-                        fontSize: 24,
-                        lineHeight: 38,
-                        textAlign: 'center',
-                        fontWeight: '700',
-                        flex: 1,
-                    }}>
-                    {currentAssistant.title}
-                </ThemedText>
-            </ThemedView>
-
-            {error && (
-                <ThemedView className="flex items-center justify-center my-4">
-                    <ThemedText className="text-red-500">{error}</ThemedText>
-                </ThemedView>
-            )}
-
-            {
-                !messages.length && !error && (
-                    <ThemedView className="flex items-center justify-center gap-6 mt-6">
-                        <Logo fill={divider} width={80} height={80}/>
-                        <ThemedText type='title'
-                                    className='text-greyscale-400 dark:text-greyscale-800'>Capabilities</ThemedText>
-
-                        <ThemedView className="w-full items-center gap-3">
-                            {
-                                capabilities.map((capability, index) => (
-                                    <CapabilityBox text={capability.text} key={index}/>
-                                ))
-                            }
-                        </ThemedView>
-
-                        <ThemedText style={{
-                            color: chatBoxType1Text,
-                        }} type='labels' className='text-base text-center'>
-                            I can do much more than this.
-                        </ThemedText>
-                    </ThemedView>
-                )
-            }
-
-            <ScrollView
-                ref={scrollViewRef}
-                className="flex-1"
-                contentContainerStyle={{paddingBottom: 100}}
-                showsVerticalScrollIndicator={false}
-            >
-                {messages.map((message) => (
-                    <ChatBubble
-                        message={message.text}
-                        imageUri={message.imageUri}
-                        key={message.id}
-                        isSender={message.sender === 'user'}
-                        assistantType={message.sender === 'bot' ? currentAssistant.title : undefined}
-                    />
-                ))}
-                {isLoading && <TypingIndicator/>}
-            </ScrollView>
-
-            <ThemedView className="absolute bottom-0 left-0 right-0 pb-9 px-6 border-t" style={{borderColor: divider}}>
-                <ThemedView className='mt-6 w-full flex-row items-center gap-4'>
-                    <ThemedInput
-                        value={inputText}
-                        onChangeText={setInputText}
-                    />
-
-                    <CustomButton
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+            <ThemedView isMain={true} className='flex-1 pt-4 pb-6 px-6'>
+                <ThemedView className="flex-row items-center justify-between mb-2">
+                    <BackButton/>
+                    <ThemedText
+                        className='text-greyscale-900 dark:text-others-white'
                         style={{
-                            width: 55,
-                            height: 55,
-                            padding: 16,
-                            boxShadow: `4px 8px 24px 0px ${PRIMARY_900}40`,
-                            display: "flex",
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: 8,
-                            borderRadius: 100,
-                        }}
-                        type='primary'
-                        ready={!!inputText.trim() && !isLoading}
-                        onPress={handleSend}
-                    >
-                        <Send fill={buttonActive} width={28} height={28}/>
-                    </CustomButton>
+                            fontSize: 24,
+                            lineHeight: 38,
+                            textAlign: 'center',
+                            fontWeight: '700',
+                            flex: 1,
+                        }}>
+                        {currentAssistant.title}
+                    </ThemedText>
                 </ThemedView>
+
+                {error && (
+                    <ThemedView className="flex items-center justify-center my-4">
+                        <ThemedText className="text-red-500">{error}</ThemedText>
+                    </ThemedView>
+                )}
+
+                {
+                    !messages.length && !error && (
+                        <ScrollView className="flex-1">
+                            <ThemedView className="flex items-center justify-center gap-6 mt-6">
+                                <Logo fill={divider} width={80} height={80}/>
+                                <ThemedText type='title'
+                                            className='text-greyscale-400 dark:text-greyscale-800'>Capabilities</ThemedText>
+
+                                <ThemedView className="w-full items-center gap-3">
+                                    {
+                                        capabilities.map((capability, index) => (
+                                            <CapabilityBox text={capability.text} key={index}/>
+                                        ))
+                                    }
+                                </ThemedView>
+
+                                <ThemedText style={{
+                                    color: chatBoxType1Text,
+                                }} type='labels' className='text-base text-center'>
+                                    I can do much more than this.
+                                </ThemedText>
+                            </ThemedView>
+                        </ScrollView>
+                    )
+                }
+
+                {messages.length > 0 && (
+                    <ScrollView
+                        ref={scrollViewRef}
+                        className="flex-1"
+                        contentContainerStyle={{
+                            paddingBottom: 20,
+                            flexGrow: 1,
+                        }}
+                        showsVerticalScrollIndicator={true}
+                        scrollEventThrottle={16}
+                        onContentSizeChange={() => scrollToBottom(true)}
+                        onLayout={() => scrollToBottom(false)}
+                    >
+                        {messages.map((message) => (
+                            <ChatBubble
+                                message={message.text}
+                                imageUri={message.imageUri}
+                                key={message.id}
+                                isSender={message.sender === 'user'}
+                                assistantType={message.sender === 'bot' ? currentAssistant.title : undefined}
+                            />
+                        ))}
+                        {isLoading && <TypingIndicator/>}
+                    </ScrollView>
+                )}
+
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ThemedView 
+                        className="w-full border-t py-4" 
+                        style={{borderColor: divider}}
+                    >
+                        <ThemedView className='w-full flex-row items-center gap-4'>
+                            <ThemedInput
+                                value={inputText}
+                                onChangeText={setInputText}
+                                onFocus={() => setTimeout(() => scrollToBottom(true), 300)}
+                            />
+
+                            <CustomButton
+                                style={{
+                                    width: 55,
+                                    height: 55,
+                                    padding: 16,
+                                    boxShadow: `4px 8px 24px 0px ${PRIMARY_900}40`,
+                                    display: "flex",
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    borderRadius: 100,
+                                }}
+                                type='primary'
+                                ready={!!inputText.trim() && !isLoading}
+                                onPress={handleSend}
+                            >
+                                <Send fill={buttonActive} width={28} height={28}/>
+                            </CustomButton>
+                        </ThemedView>
+                    </ThemedView>
+                </TouchableWithoutFeedback>
             </ThemedView>
-        </ThemedView>
+        </KeyboardAvoidingView>
     )
 }
 
